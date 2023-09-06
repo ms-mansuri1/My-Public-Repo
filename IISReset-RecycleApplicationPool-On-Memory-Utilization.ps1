@@ -3,12 +3,12 @@ $memoryThreshold = 90
 
 # Send Email settings
 $emailSettings = @{
-    Username = "USERNAME"
-    Password = Get-Content PASSWORD STRING PATH | ConvertTo-SecureString -AsPlainText -Force
+    Username = "XYZ USERNAME"
+    Password = Get-Content C:\Script\string.txt | ConvertTo-SecureString -AsPlainText -Force
     Port = 25
-    SmtpServer = "SMTP-ADDRESS"
-    Recipients = @("EMAIL-ADDRESS", "EMAIL-ADDRESS")
-    From = "EMAIL-ADDRESS"
+    SmtpServer = "XYZ.SMTP.COM"
+    Recipients = @("ABC.COM", "ABC2.COM")
+    From = "XYZ.COM"
 }
 
 # Function to send email notification
@@ -25,9 +25,12 @@ function Send-EmailNotification {
         $smtp.Port = $emailSettings.Port
         $message = New-Object System.Net.Mail.MailMessage
 
+        # Get the IP address of the server
+        $ipAddress = Test-Connection -ComputerName $env:COMPUTERNAME -Count 1 | Select-Object -ExpandProperty IPV4Address
+
         # Add IP address to the email subject
-        $message.Subject = "$subject - IP: $($env:COMPUTERNAME)"
-        $message.Body = "Hostname: $($env:COMPUTERNAME)`r`nIP Address: $($env:LOCALIP)`r`n$body"
+        $message.Subject = "SERVER - IP: $ipAddress - $subject"
+        $message.Body = "DEAR CONCERN `r`nHostname: $($env:COMPUTERNAME)`r`nIP Address: $ipAddress`r`n$body"
 
         # Add recipients
         $emailSettings.Recipients | ForEach-Object { $message.To.Add($_) }
@@ -65,7 +68,7 @@ function Restart-IIS {
     } catch {
         # Handle error and send an error email
         $errorMessage = $_.Exception.Message
-        Send-EmailNotification "IIS restart failed. Check the server for issues." $errorMessage
+        Send-EmailNotification " IIS restart failed. Check the server for issues." $errorMessage
         return $false
     }
 }
@@ -90,8 +93,8 @@ function Check-MemoryUtilization {
 # Main monitoring loop - Check only between 1 PM and 4 PM
 while ($true) {
     $currentTime = Get-Date
-    $startMonitoringTime = Get-Date -Hour 13 -Minute 0 -Second 0
-    $endMonitoringTime = Get-Date -Hour 16 -Minute 0 -Second 0
+    $startMonitoringTime = Get-Date -Hour 13 -Minute 00 -Second 0
+    $endMonitoringTime = Get-Date -Hour 16 -Minute 00 -Second 0
 
     if ($currentTime -ge $startMonitoringTime -and $currentTime -lt $endMonitoringTime) {
         Check-MemoryUtilization
