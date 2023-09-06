@@ -1,0 +1,18 @@
+Create automatic backup through task scheduler in windows.
+
+
+.BAT
+@echo off
+
+TO COPY INSIDE PC
+robocopy -=-Source-=- -=-Destination-=- /MIR /XA:H /W:0 /R:1 /REG > C:\backup.log
+
+TO COPY OVER THE NETWORK.
+robocopy Source Network_Destination /MIR /XA:H /W:0 /R:1 /REG /FFT >> C:\backup.log
+
+
+
+.VBS
+Set WshShell = CreateObject("WScript.Shell") 
+WshShell.Run chr(34) & "Batch Files directory" & Chr(34), 0
+Set WshShell = Nothing
