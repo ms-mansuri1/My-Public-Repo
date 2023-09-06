@@ -1,32 +1,43 @@
-﻿# Define memory threshold (90%)
+# Define memory threshold (90%)
 $memoryThreshold = 90
 
 # Send Email settings
-$username = "EMAIL-USERNAME"
-$password = Get-Content PATH TO PASSWORD FILE | ConvertTo-SecureString -AsPlainText -Force
-$cred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $username, $password
-$portno = "PORT-NO"
-$smtpsrv = "SERVER-SMTP"
-$smtpto = "RECIPIENT-MAIL-ADDRESS", "RECIPIENT-EMAIL-ADDRESS"
-$smtpfrom = "SENDER-EMAIL-ADDRESS"
+$emailSettings = @{
+    Username = "USERNAME"
+    Password = Get-Content PASSWORD STRING PATH | ConvertTo-SecureString -AsPlainText -Force
+    Port = 25
+    SmtpServer = "SMTP-ADDRESS"
+    Recipients = @("EMAIL-ADDRESS", "EMAIL-ADDRESS")
+    From = "EMAIL-ADDRESS"
+}
 
-# Function to send email notification with error message
-function Send-EmailNotification($subject, $body, $error = $null) {
+# Function to send email notification
+function Send-EmailNotification {
+    param (
+        [string]$subject,
+        [string]$body,
+        [string]$error = $null
+    )
+
     try {
-        $smtp = New-Object Net.Mail.SmtpClient($smtpsrv)
-        $smtp.Credentials = $cred
-        $smtp.Port = $portno
+        $smtp = New-Object Net.Mail.SmtpClient($emailSettings.SmtpServer)
+        $smtp.Credentials = New-Object System.Net.NetworkCredential($emailSettings.Username, $emailSettings.Password)
+        $smtp.Port = $emailSettings.Port
         $message = New-Object System.Net.Mail.MailMessage
-        $message.Subject = $subject
-        $message.Body = $body
-        $message.From = $smtpfrom
-        $message.To.Add($smtpto)
+
+        # Add IP address to the email subject
+        $message.Subject = "$subject - IP: $($env:COMPUTERNAME)"
+        $message.Body = "Hostname: $($env:COMPUTERNAME)`r`nIP Address: $($env:LOCALIP)`r`n$body"
+
+        # Add recipients
+        $emailSettings.Recipients | ForEach-Object { $message.To.Add($_) }
 
         # Add error message if provided
         if ($error) {
             $message.Body += "`r`nError Message:`r`n$error"
         }
 
+        $message.From = $emailSettings.From
         $smtp.Send($message)
     } catch {
         Write-Host "Failed to send email: $_"
@@ -39,7 +50,7 @@ function Restart-IIS {
         # Recycle application pool
         Invoke-Command -ScriptBlock {
             Import-Module WebAdministration
-            Restart-WebAppPool -Name "IIS-APP-NAME"
+            Restart-WebAppPool -Name "CitrussTools.WS"
         }
 
         # Restart IIS
@@ -54,7 +65,7 @@ function Restart-IIS {
     } catch {
         # Handle error and send an error email
         $errorMessage = $_.Exception.Message
-        Send-EmailNotification "(HOSTNAME/IP) IIS Restart Failed" "IIS restart failed. Check the server for issues." $errorMessage
+        Send-EmailNotification "IIS restart failed. Check the server for issues." $errorMessage
         return $false
     }
 }
@@ -71,10 +82,7 @@ function Check-MemoryUtilization {
 
         if ($result -eq $true) {
             # Send success alert
-            Send-EmailNotification "(HOSTNAME/IP) IIS Restarted Successfully" "IIS has been restarted successfully."
-        } else {
-            # Send failure alert with error message
-            Send-EmailNotification "(HOSTNAME/IP) IIS Restart Failed" "IIS restart failed. Check the server for issues."
+            Send-EmailNotification "IIS has been restarted successfully."
         }
     }
 }
