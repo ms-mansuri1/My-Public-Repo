@@ -6,7 +6,7 @@
 # 5. Uncomment rrs line if you want to use reduced redundancy storage (optional)
 
 add-pssnapin CloudBerryLab.Explorer.PSSnapIn
-$s3 = Get-CloudS3Connection -Key AKIAI4EB3J7YXX5AMFGA -Secret do4C3KQsci5LA3yP6xyPDjkrFrveuyuvoWjts3gj
+$s3 = Get-CloudS3Connection -YOUR KEY -YOUR SECRET
 $local = Get-CloudFilesystemConnection
 $bucket = "ctv-aws-cloud/CITool"
 
